@@ -3,6 +3,7 @@ from tkinter import messagebox
 from pathlib import Path
 import os
 from random import choice, randint, shuffle
+import json
 
 BASE_DIR = Path(__file__).parent
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,21 +27,67 @@ def generate_password():
   password_input.insert(0, password)
 #   print(f"Your password is: {password}")
 
-        
+# ----------------------------FIND PASSWORD------------------------------- #
+
+def find_password():
+    website = website_input.get()
+    try:
+        with open(os.path.join(base_dir, "Saved_Users.json"), "r") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+            messagebox.showerror(title="error", message="No data File Found!. ")
+    else:
+            if website in data:
+                email = data[website]["email"]
+                password = data[website]["password"]
+                messagebox.showinfo(title="Website", message=f"Email: {email}\n Password{password}")
+            else:
+                 messagebox.showerror(title="Error", message=f"There are NO details for{website} exits!.")
+
+
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save():
     website = website_input.get().strip().capitalize()
     email = email_input.get().strip()
     password = password_input.get().strip()
+    new_data = {
+         website:  {
+              "email": email,
+              "password": password,        
+        }
+    }
     if not website or not email or not password:
             messagebox.showerror(title="Oops", message="Please dont leave any fields empty!")
+
+
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"these are the details entered: \nEmail: {email}  \nPassword=: {password} is this ok to save?")
-        if is_ok:
-            with open(os.path.join(base_dir, "Saved_Users.csv"), "a") as Users_data:
-                Users_data.write(f"{website}  | {email} | {password} \n")
-                website_input.delete(0, END)
-                password_input.delete(0, END)
+        try:
+            with open(os.path.join(base_dir, "Saved_Users.json"), "r") as data_file:
+                #Reading old data
+
+                data = json.load(data_file)
+
+        except FileNotFoundError:
+
+            with open(os.path.join(base_dir, "Saved_Users.json"), "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+                
+             #Updating old data
+            data.update(new_data)
+
+
+            with open(os.path.join(base_dir, "Saved_Users.json"), "w") as data_file:
+
+
+                #Saving updated data
+                json.dump(data, data_file, indent=4)
+        
+        finally:
+        
+            website_input.delete(0, END)
+            password_input.delete(0, END)
+               
 # ---------------------------- UI SETUP ------------------------------- #
 
 window = Tk()
@@ -54,11 +101,14 @@ Logo = PhotoImage(
 canvas.create_image(100, 100, image=Logo)
 canvas.grid(row=0, column=1)
 
-website_text = Label(text = "Website: ")
+website_text = Label(text = "Website:")
 website_text.grid(row=1, column=0)
-website_input = Entry(width=35)
+website_input = Entry(width=21)
 website_input.focus()
-website_input.grid(row=1, column=1, columnspan=2)
+website_input.grid(row=1, column=1)
+
+search_button = Button(text="search", width=13, command=find_password)
+search_button.grid(row=1, column=2)
 
 
 email_text = Label(text="Email/Username:")
